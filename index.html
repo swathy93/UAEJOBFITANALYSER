@@ -106,7 +106,7 @@
       const jd = jdInput.value.trim();
       if (!jd) return;
     
-      if (!BACKEND_URL ||  BACKEND_URL.includes("https://script.google.com/macros/s/AKfycby5z4Z73dp-98yuN0vEd1csf7QfAoz2vxFkjOwn6Crk5GmipH2LbbZpLOMxWF7LJx9-/exec")) {
+      if (!BACKEND_URL ||  !BACKEND_URL.includes("https://script.google.com/macros/s/AKfycby5z4Z73dp-98yuN0vEd1csf7QfAoz2vxFkjOwn6Crk5GmipH2LbbZpLOMxWF7LJx9-/exec")) {
   showStatus(
     "Setup needed: add your deployed Google Apps Script Web App URL in index.html, then publish the GitHub Pages site.",
     true
