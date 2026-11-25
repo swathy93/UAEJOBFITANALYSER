@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UAE Job Fit Analyzer</title>
+  <meta name="description" content="Analyze UAE job descriptions against your experience, salary goals, and career priorities." />
+  <style>
+    :root { --ink:#172033; --muted:#64748b; --line:#e2e8f0; --paper:#fff; --wash:#f5f7fb; --accent:#3559e0; --accent2:#203fb5; --good:#e7f8ef; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--ink); background:linear-gradient(135deg,#eef2ff 0%,#f8fafc 55%,#f0fdfa 100%); min-height:100vh; }
+    .wrap { width:min(980px, calc(100% - 32px)); margin:42px auto; }
+    header { margin-bottom:22px; }
+    .eyebrow { color:var(--accent); font-size:.78rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+    h1 { font-size:clamp(2rem,5vw,3rem); line-height:1.08; margin:9px 0 12px; letter-spacing:-.04em; }
+    .sub { color:var(--muted); max-width:680px; line-height:1.65; margin:0; }
+    .panel { background:var(--paper); border:1px solid rgba(226,232,240,.9); border-radius:22px; padding:clamp(18px,4vw,32px); box-shadow:0 20px 60px rgba(30,41,59,.08); }
+    label { display:block; font-weight:750; margin:0 0 9px; }
+    textarea { width:100%; min-height:290px; resize:vertical; border:1px solid #cbd5e1; border-radius:14px; padding:15px; font:inherit; line-height:1.55; color:var(--ink); background:#fcfdff; outline:none; }
+    textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(53,89,224,.12); }
+    .hint { color:var(--muted); font-size:.84rem; margin-top:8px; }
+    button { border:0; background:var(--accent); color:#fff; border-radius:12px; padding:14px 20px; font:inherit; font-weight:800; cursor:pointer; width:100%; margin-top:18px; transition:background .15s,transform .15s; }
+    button:hover { background:var(--accent2); transform:translateY(-1px); }
+    button:disabled { opacity:.55; cursor:wait; transform:none; }
+    .privacy { display:flex; gap:10px; align-items:flex-start; background:#f8fafc; border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-top:16px; color:#475569; font-size:.85rem; line-height:1.5; }
+    .status { display:none; margin-top:18px; padding:13px 15px; border-radius:12px; background:#eff6ff; color:#1d4ed8; line-height:1.5; }
+    .status.error { background:#fff1f2; color:#be123c; }
+    .result { display:none; margin-top:22px; }
+    .result-head { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+    .result h2 { margin:0; font-size:1.35rem; }
+    .result-actions { display:flex; gap:8px; }
+    .secondary { width:auto; margin:0; background:#eef2ff; color:#263b9b; padding:9px 13px; }
+    .secondary:hover { background:#e0e7ff; }
+    .output { white-space:pre-wrap; overflow-wrap:anywhere; border:1px solid var(--line); border-radius:14px; padding:20px; background:#fff; line-height:1.65; }
+    .footer { text-align:center; color:var(--muted); font-size:.8rem; margin:20px 0 0; }
+    .small { font-size:.82rem; color:var(--muted); }
+    #backendForm { display:none; }
+    @media(max-width:600px) { .wrap { margin:22px auto; } .panel { border-radius:17px; } textarea { min-height:240px; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div class="eyebrow">Career toolkit · UAE</div>
+      <h1>UAE Job Fit Analyzer</h1>
+      <p class="sub">Paste a job description. Get a candid breakdown of seniority, must-have skills, salary, benefits, fit, gaps, and whether it deserves your time.</p>
+    </header>
+
+    <section class="panel">
+      <form id="analyzerForm">
+        <label for="jd">Paste the complete job description</label>
+        <textarea id="jd" name="jd" required maxlength="45000" placeholder="Paste the job title, company name, responsibilities, requirements, qualifications, and any salary or benefits mentioned..."></textarea>
+        <div class="hint"><span id="charCount">0</span>/45,000 characters · Only this field is required.</div>
+        <button id="analyzeBtn" type="submit">Analyze this job description</button>
+      </form>
+      <div class="privacy"><span>🔒</span><span>Your job description and the generated assessment will be sent to your configured Google Apps Script and saved in your Google Sheet. Do not paste passwords, personal IDs, or other sensitive information.</span></div>
+      <div id="status" class="status" role="status" aria-live="polite"></div>
+      <section id="result" class="result">
+        <div class="result-head">
+          <h2>Job assessment</h2>
+          <div class="result-actions">
+            <button type="button" id="copyBtn" class="secondary">Copy report</button>
+            <button type="button" id="downloadBtn" class="secondary">Download .txt</button>
+          </div>
+        </div>
+        <div id="output" class="output"></div>
+        <p class="small">Salary figures are estimates unless the employer has published them. Always verify compensation, benefits, and role scope with the recruiter.</p>
+      </section>
+    </section>
+    <p class="footer">Built for practical career decisions, not keyword bingo.</p>
+  </main>
+
+  <!-- Configure this URL after deploying the Google Apps Script backend. -->
+  <iframe name="responseFrame" id="responseFrame" title="Analysis response" hidden></iframe>
+  <form id="backendForm" method="POST" target="responseFrame">
+    <input type="hidden" name="jd" id="backendJd" />
+    <input type="hidden" name="requestId" id="requestId" />
+  </form>
+
+  <script>
+    // Paste your deployed Google Apps Script Web App URL between the quotes below.
+    const BACKEND_URL = "PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE";
+
+    const form = document.getElementById("analyzerForm");
+    const jdInput = document.getElementById("jd");
+    const charCount = document.getElementById("charCount");
+    const button = document.getElementById("analyzeBtn");
+    const statusBox = document.getElementById("status");
+    const result = document.getElementById("result");
+    const output = document.getElementById("output");
+    const backendForm = document.getElementById("backendForm");
+    const backendJd = document.getElementById("backendJd");
+    const requestIdInput = document.getElementById("requestId");
+    let latestReport = "";
+
+    jdInput.addEventListener("input", () => charCount.textContent = jdInput.value.length);
+
+    function showStatus(message, isError = false) {
+      statusBox.style.display = "block";
+      statusBox.classList.toggle("error", isError);
+      statusBox.textContent = message;
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const jd = jdInput.value.trim();
+      if (!jd) return;
+      if (BACKEND_URL.includes("PASTE_YOUR_")) {
+        showStatus("Setup needed: add your deployed Google Apps Script Web App URL in index.html, then publish the GitHub Pages site.", true);
+        return;
+      }
+      button.disabled = true;
+      button.textContent = "Analyzing… please wait";
+      result.style.display = "none";
+      showStatus("Reading the JD, checking the role against your profile, and saving the result to your Google Sheet. This can take up to a minute.");
+      backendJd.value = jd;
+      requestIdInput.value = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+      backendForm.action = BACKEND_URL;
+      backendForm.submit();
+    });
+
+    window.addEventListener("message", (event) => {
+      if (!event.data || event.data.type !== "JD_ANALYZER_RESULT") return;
+      const data = event.data;
+      button.disabled = false;
+      button.textContent = "Analyze this job description";
+      if (!data.ok) {
+        showStatus(data.error || "The analysis could not be completed. Check the Apps Script execution log and API key.", true);
+        return;
+      }
+      latestReport = data.report || "";
+      output.textContent = latestReport;
+      result.style.display = "block";
+      showStatus("Analysis complete. The job description and report have been saved to your Google Sheet.");
+      result.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    document.getElementById("copyBtn").addEventListener("click", async () => {
+      if (!latestReport) return;
+      try { await navigator.clipboard.writeText(latestReport); showStatus("Report copied to clipboard."); }
+      catch (_) { showStatus("Clipboard access was blocked by the browser. Select the report text and copy it manually.", true); }
+    });
+
+    document.getElementById("downloadBtn").addEventListener("click", () => {
+      if (!latestReport) return;
+      const blob = new Blob([latestReport], {type:"text/plain;charset=utf-8"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "UAE-job-assessment.txt"; a.click();
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>
