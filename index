@@ -79,7 +79,7 @@
 
   <script>
     // Paste your deployed Google Apps Script Web App URL between the quotes below.
-    const BACKEND_URL = "PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycby5z4Z73dp-98yuN0vEd1csf7QfAoz2vxFkjOwn6Crk5GmipH2LbbZpLOMxWF7LJx9-/exec";
 
     const form = document.getElementById("analyzerForm");
     const jdInput = document.getElementById("jd");
@@ -105,7 +105,7 @@
       event.preventDefault();
       const jd = jdInput.value.trim();
       if (!jd) return;
-      if (BACKEND_URL.includes("PASTE_YOUR_")) {
+      if (BACKEND_URL.includes("https://script.google.com/macros/s/AKfycby5z4Z73dp-98yuN0vEd1csf7QfAoz2vxFkjOwn6Crk5GmipH2LbbZpLOMxWF7LJx9-/exec")) {
         showStatus("Setup needed: add your deployed Google Apps Script Web App URL in index.html, then publish the GitHub Pages site.", true);
         return;
       }
